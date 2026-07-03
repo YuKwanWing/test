@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Retro-Neon Ping Pong</title>
+    <!-- Tailwind CSS for sleek UI layouts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for custom arcade/modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #03000a;
+            overflow: hidden;
+            touch-action: none;
+        }
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom neon shadows & glow effects */
+        .neon-text-blue {
+            text-shadow: 0 0 5px rgba(0, 242, 254, 0.5), 0 0 15px rgba(0, 242, 254, 0.8);
+        }
+        .neon-text-pink {
+            text-shadow: 0 0 5px rgba(255, 0, 128, 0.5), 0 0 15px rgba(255, 0, 128, 0.8);
+        }
+        .neon-border-blue {
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.4), inset 0 0 10px rgba(0, 242, 254, 0.4);
+            border-color: rgba(0, 242, 254, 0.8);
+        }
+        .neon-border-pink {
+            box-shadow: 0 0 10px rgba(255, 0, 128, 0.4), inset 0 0 10px rgba(255, 0, 128, 0.4);
+            border-color: rgba(255, 0, 128, 0.8);
+        }
+        .glassmorphism {
+            background: rgba(10, 5, 25, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex items-center justify-center relative p-2 md:p-6 select-none">
+
+    <!-- Background decorative grids -->
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(20,10,40,0.5)_0%,rgba(3,0,10,1)_100%)] pointer-events-none z-0"></div>
+    <div class="absolute inset-0 opacity-[0.03] pointer-events-none z-0" style="background-image: linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 40px 40px;"></div>
+
+    <!-- MAIN GAME CONTAINER -->
+    <div class="relative w-full max-w-5xl h-full max-h-[640px] flex flex-col justify-between z-10 glassmorphism rounded-3xl overflow-hidden border border-purple-500/20 shadow-2xl shadow-purple-950/30">
+        
+        <!-- TOP STATUS BAR -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-black/30">
+            <div class="flex items-center gap-2">
+                <span class="w-3.5 h-3.5 rounded-full bg-cyan-400 animate-pulse inline-block shadow-[0_0_8px_#00f2fe]"></span>
+                <span class="text-xs uppercase tracking-widest text-cyan-400/80 font-bold font-orbitron">P1 System</span>
+            </div>
+            
+            <div class="flex items-center gap-6">
+                <!-- Scores -->
+                <div class="flex items-center gap-8 font-orbitron text-2xl font-black">
+                    <span id="score-p1" class="text-cyan-400 neon-text-blue">00</span>
+                    <span class="text-white/20">:</span>
+                    <span id="score-p2" class="text-pink-500 neon-text-pink">00</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="btn-pause" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-purple-300 border border-purple-500/30 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200">
+                    Pause
+                </button>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs uppercase tracking-widest text-pink-500/80 font-bold font-orbitron">P2 System</span>
+                    <span class="w-3.5 h-3.5 rounded-full bg-pink-500 animate-pulse inline-block shadow-[0_0_8px_#ff0080]"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CANVAS GAME FIELD -->
+        <div class="relative flex-grow w-full h-0 overflow-hidden bg-black/40">
+            <canvas id="gameCanvas" class="w-full h-full block touch-none"></canvas>
+
+            <!-- Touch Helper Zones (Visible only on mobile/touch devices) -->
+            <div id="touch-controls" class="absolute inset-0 pointer-events-none flex opacity-0 transition-opacity duration-500">
+                <div class="w-1/2 h-full border-r border-dashed border-white/5 flex items-end justify-start p-6">
+                    <div class="text-cyan-400/30 text-xs uppercase tracking-wider font-orbitron">← Drag left half for P1</div>
+                </div>
+                <div class="w-1/2 h-full flex items-end justify-end p-6">
+                    <div class="text-pink-400/30 text-xs uppercase tracking-wider font-orbitron">Drag right half for P2 →</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM CONTROLS & META INFO -->
+        <div class="px-6 py-3 border-t border-white/5 bg-black/30 flex flex-wrap gap-4 items-center justify-between text-xs text-white/40 font-medium">
+            <div class="flex items-center gap-3">
+                <span class="flex items-center gap-1.5"><kbd class="bg-white/10 px-1.5 py-0.5 rounded text-white text-[10px]">W</kbd>/<kbd class="bg-white/10 px-1.5 py-0.5 rounded text-white text-[10px]">S</kbd> P1 Move</span>
+                <span class="text-white/10">|</span>
+                <span class="flex items-center gap-1.5"><kbd class="bg-white/10 px-1.5 py-0.5 rounded text-white text-[10px]">▲</kbd>/<kbd class="bg-white/10 px-1.5 py-0.5 rounded text-white text-[10px]">▼</kbd> P2 Move</span>
+            </div>
+            <div id="game-status-tip" class="text-purple-300/80 animate-pulse">Ready to execute simulation</div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                    <span>Power-ups active</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- OVERLAY: MAIN MENU -->
+        <div id="overlay-menu" class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/95 p-6 text-center transition-all duration-300">
+            <h1 class="text-5xl md:text-7xl font-black tracking-widest font-orbitron text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 mb-2">NEON PONG</h1>
+            <p class="text-purple-300/70 text-sm tracking-widest uppercase mb-10 max-w-md">Quantum cybernetic athletic simulator. Rule the digital arena.</p>
+
+            <div class="w-full max-w-md space-y-6">
+                <!-- Mode Selector -->
+                <div class="space-y-2">
+                    <label class="block text-xs uppercase tracking-widest text-cyan-400 font-bold font-orbitron text-left">Select Game Protocol</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button id="btn-mode-ai" class="py-3 px-4 rounded-xl border border-cyan-400/30 bg-cyan-950/20 hover:bg-cyan-950/40 text-cyan-300 font-bold tracking-wider transition-all duration-200 neon-border-blue">
+                            1 PLAYER (VS AI)
+                        </button>
+                        <button id="btn-mode-pvp" class="py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 font-bold tracking-wider transition-all duration-200">
+                            LOCAL 2 PLAYERS
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Difficulty Selector (Only for AI mode) -->
+                <div id="ai-difficulty-container" class="space-y-2">
+                    <label class="block text-xs uppercase tracking-widest text-pink-500 font-bold font-orbitron text-left">AI CPU Core Intensity</label>
+                    <div class="grid grid-cols-4 gap-2">
+                        <button data-diff="easy" class="py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 text-xs font-bold tracking-wider transition-all duration-200">
+                            EASY
+                        </button>
+                        <button data-diff="medium" class="py-2 rounded-lg border border-pink-500/40 bg-pink-950/20 text-pink-400 text-xs font-bold tracking-wider transition-all duration-200 neon-border-pink">
+                            MEDIUM
+                        </button>
+                        <button data-diff="hard" class="py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 text-xs font-bold tracking-wider transition-all duration-200">
+                            HARD
+                        </button>
+                        <button data-diff="impossible" class="py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 text-xs font-bold tracking-wider transition-all duration-200">
+                            NIGHTMARE
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Customizations / Extra Settings -->
+                <div class="grid grid-cols-2 gap-4 text-left pt-2">
+                    <!-- Power-ups Toggle -->
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                        <div>
+                            <div class="text-xs font-bold tracking-wider text-purple-300 uppercase">Power-Ups</div>
+                            <div class="text-[10px] text-white/40">Chaos cubes & speed nodes</div>
+                        </div>
+                        <button id="btn-toggle-powerups" class="w-12 h-6 rounded-full bg-green-500/20 border border-green-500/50 flex items-center p-1 cursor-pointer transition-colors">
+                            <span class="w-4 h-4 rounded-full bg-green-400 translate-x-6 transition-transform block"></span>
+                        </button>
+                    </div>
+
+                    <!-- Audio Toggle -->
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                        <div>
+                            <div class="text-xs font-bold tracking-wider text-purple-300 uppercase">Synth Sound</div>
+                            <div class="text-[10px] text-white/40">Web Audio FX feedback</div>
+                        </div>
+                        <button id="btn-toggle-sound" class="w-12 h-6 rounded-full bg-green-500/20 border border-green-500/50 flex items-center p-1 cursor-pointer transition-colors">
+                            <span class="w-4 h-4 rounded-full bg-green-400 translate-x-6 transition-transform block"></span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- START ACTION -->
+                <button id="btn-launch" class="w-full py-4 mt-4 rounded-xl bg-gradient-to-r from-cyan-400 to-pink-500 hover:from-cyan-300 hover:to-pink-400 text-black font-black text-lg tracking-widest uppercase transition-all duration-300 shadow-[0_0_25px_rgba(236,72,153,0.4)] hover:scale-[1.02]">
+                    INITIATE ARENA
+                </button>
+            </div>
+        </div>
+
+        <!-- OVERLAY: PAUSE -->
+        <div id="overlay-pause" class="absolute inset-0 z-20 hidden flex-col items-center justify-center bg-slate-950/85 text-center p-6 transition-all duration-300">
+            <h2 class="text-4xl font-bold tracking-widest font-orbitron text-purple-300 uppercase mb-2">Simulation Suspended</h2>
+            <p class="text-white/40 text-xs uppercase tracking-wider mb-8">AI core is paused in buffer space</p>
+            <div class="space-y-4 w-64">
+                <button id="btn-resume" class="w-full py-3 rounded-xl border border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 font-bold uppercase tracking-wider transition-all duration-200 neon-border-blue">
+                    Resume
+                </button>
+                <button id="btn-quit" class="w-full py-3 rounded-xl border border-white/10 hover:bg-white/5 text-white/50 hover:text-white/90 text-xs font-bold uppercase tracking-wider transition-all duration-200">
+                    Terminate & Quit
+                </button>
+            </div>
+        </div>
+
+        <!-- OVERLAY: GAME OVER -->
+        <div id="overlay-gameover" class="absolute inset-0 z-20 hidden flex-col items-center justify-center bg-slate-950/95 text-center p-6 transition-all duration-300">
+            <span id="gameover-sub" class="text-xs uppercase tracking-widest text-white/50 mb-2">Cybernetic Arena Over</span>
+            <h2 id="gameover-title" class="text-5xl md:text-6xl font-black tracking-widest font-orbitron mb-8">VICTORY</h2>
+            
+            <div class="p-6 rounded-2xl bg-white/5 border border-white/10 mb-8 max-w-sm w-full">
+                <div class="text-[10px] text-white/40 uppercase tracking-widest mb-2">Final Diagnostic Scores</div>
+                <div class="flex justify-around items-center font-orbitron text-3xl font-black">
+                    <div class="flex flex-col">
+                        <span class="text-xs text-cyan-400/60 uppercase tracking-wider font-normal mb-1">PLAYER 1</span>
+                        <span id="final-score-p1" class="text-cyan-400 neon-text-blue">0</span>
+                    </div>
+                    <span class="text-white/20">:</span>
+                    <div class="flex flex-col">
+                        <span class="text-xs text-pink-500/60 uppercase tracking-wider font-normal mb-1">PLAYER 2</span>
+                        <span id="final-score-p2" class="text-pink-500 neon-text-pink">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4 w-64">
+                <button id="btn-restart" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 to-pink-500 text-black font-black uppercase tracking-wider transition-all duration-300 shadow-[0_0_20px_rgba(236,72,153,0.3)] hover:scale-[1.02]">
+                    Rematch Simulation
+                </button>
+                <button id="btn-return-menu" class="w-full py-3 rounded-xl border border-white/10 hover:bg-white/5 text-white/50 hover:text-white/90 text-xs font-bold uppercase tracking-wider transition-all duration-200">
+                    System Menu
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MAIN GAME LOGIC -->
+    <script>
+        // --- Web Audio Synthesizer Class for sound effects ---
+        class SynthManager {
+            constructor() {
+                this.audioCtx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.audioCtx) {
+                    this.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playHit(freq = 150, duration = 0.1) {
+                if (!this.enabled) return;
+                this.init();
+                
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, this.audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq * 1.5, this.audioCtx.currentTime + duration);
+
+                gain.gain.setValueAtTime(0.15, this.audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                
+                osc.start();
+                osc.stop(this.audioCtx.currentTime + duration);
+            }
+
+            playScore() {
+                if (!this.enabled) return;
+                this.init();
+
+                const now = this.audioCtx.currentTime;
+                // Double note synth chime
+                const playNote = (freq, startOffset, dur) => {
+                    const osc = this.audioCtx.createOscillator();
+                    const gain = this.audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + startOffset);
+                    gain.gain.setValueAtTime(0.1, now + startOffset);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + startOffset + dur);
+                    osc.connect(gain);
+                    gain.connect(this.audioCtx.destination);
+                    osc.start(now + startOffset);
+                    osc.stop(now + startOffset + dur);
+                };
+                
+                playNote(261.63, 0, 0.2); // C4
+                playNote(392.00, 0.1, 0.4); // G4
+            }
+
+            playPowerup() {
+                if (!this.enabled) return;
+                this.init();
+
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, this.audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, this.audioCtx.currentTime + 0.3);
+                
+                gain.gain.setValueAtTime(0.1, this.audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.audioCtx.currentTime + 0.3);
+                
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+                osc.start();
+                osc.stop(this.audioCtx.currentTime + 0.3);
+            }
+        }
+
+        const synth = new SynthManager();
+
+        // --- Game Config and State ---
+        const config = {
+            targetScore: 10,
+            aiSpeedCoeffs: {
+                easy: 0.05,
+                medium: 0.10,
+                hard: 0.15,
+                impossible: 0.28
+            },
+            paddleHeightCoeff: 0.18, // 18% of canvas height
+            paddleWidthCoeff: 0.015,
+            ballRadiusCoeff: 0.012
+        };
+
+        const state = {
+            is1Player: true,
+            aiDifficulty: 'medium',
+            powerupsActive: true,
+            isPaused: false,
+            isPlaying: false,
+            p1Score: 0,
+            p2Score: 0,
+            touchActive: false
+        };
+
+        // DOM elements
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const overlayMenu = document.getElementById('overlay-menu');
+        const overlayPause = document.getElementById('overlay-pause');
+        const overlayGameOver = document.getElementById('overlay-gameover');
+        const scoreP1Display = document.getElementById('score-p1');
+        const scoreP2Display = document.getElementById('score-p2');
+        const finalP1Display = document.getElementById('final-score-p1');
+        const finalP2Display = document.getElementById('final-score-p2');
+        const gameoverTitle = document.getElementById('gameover-title');
+        const gameoverSub = document.getElementById('gameover-sub');
+        const gameStatusTip = document.getElementById('game-status-tip');
+        const touchControlsHint = document.getElementById('touch-controls');
+
+        // Config buttons
+        const btnModeAi = document.getElementById('btn-mode-ai');
+        const btnModePvp = document.getElementById('btn-mode-pvp');
+        const aiDifficultyContainer = document.getElementById('ai-difficulty-container');
+        const btnTogglePowerups = document.getElementById('btn-toggle-powerups');
+        const btnToggleSound = document.getElementById('btn-toggle-sound');
+        const btnLaunch = document.getElementById('btn-launch');
+        const btnPause = document.getElementById('btn-pause');
+        const btnResume = document.getElementById('btn-resume');
+        const btnQuit = document.getElementById('btn-quit');
+        const btnRestart = document.getElementById('btn-restart');
+        const btnReturnMenu = document.getElementById('btn-return-menu');
+
+        // Game Arena Dimensions (Internal logic space)
+        const arena = {
+            width: 1000,
+            height: 600,
+            p1Y: 250,
+            p2Y: 250,
+            p1Height: 108,
+            p2Height: 108,
+            paddleWidth: 15,
+            ball: {
+                x: 500,
+                y: 300,
+                vx: 5,
+                vy: 3,
+                radius: 12,
+                baseSpeed: 7,
+                speedMultiplier: 1
+            },
+            powerup: {
+                x: 0,
+                y: 0,
+                size: 20,
+                active: false,
+                type: '', // 'speed', 'large', 'shield'
+                timer: 0
+            },
+            particles: [],
+            shieldLeft: 0, // frame counter
+            shieldRight: 0,
+            activeEffects: {
+                p1Large: 0,
+                p2Large: 0
+            }
+        };
+
+        // --- Resize & Handle Canvas Aspect Ratio ---
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            // Set drawing buffer
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            
+            // Adjust logical size ratios if needed (keep 1000x600 coordinate framework)
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            // Adjust client size
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- Controls Input Handler ---
+        const keys = {};
+        window.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (e.key === ' ' || e.key === 'p' || e.key === 'Escape') {
+                togglePause();
+            }
+        });
+        window.addEventListener('keyup', (e) => keys[e.key] = false);
+
+        // Touch Interaction Support (Fully Fluid Screen drag)
+        let touchStartP1Y = 0;
+        let touchStartP2Y = 0;
+        
+        canvas.addEventListener('touchstart', (e) => {
+            state.touchActive = true;
+            touchControlsHint.style.opacity = '1';
+            
+            const rect = canvas.getBoundingClientRect();
+            for (let i = 0; i < e.touches.length; i++) {
+                const t = e.touches[i];
+                const x = t.clientX - rect.left;
+                const canvasClientWidth = rect.width;
+                
+                if (x < canvasClientWidth / 2) {
+                    touchStartP1Y = t.clientY;
+                } else {
+                    touchStartP2Y = t.clientY;
+                }
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleY = arena.height / rect.height;
+
+            for (let i = 0; i < e.touches.length; i++) {
+                const t = e.touches[i];
+                const x = t.clientX - rect.left;
+                const y = t.clientY - rect.top;
+                const canvasClientWidth = rect.width;
+
+                // Scale relative movement directly to dynamic paddle coordinates
+                if (x < canvasClientWidth / 2) {
+                    arena.p1Y = Math.max(0, Math.min(arena.height - arena.p1Height, y * scaleY - arena.p1Height / 2));
+                } else {
+                    if (!state.is1Player) {
+                        arena.p2Y = Math.max(0, Math.min(arena.height - arena.p2Height, y * scaleY - arena.p2Height / 2));
+                    }
+                }
+            }
+        }, { passive: true });
+
+        // --- Particles Engine ---
+        function createExplosion(x, y, color) {
+            const count = 18;
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2 + Math.random() * 6;
+                arena.particles.push({
+                    x,
+                    y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: 2 + Math.random() * 4,
+                    color,
+                    alpha: 1,
+                    decay: 0.02 + Math.random() * 0.03
+                });
+            }
+        }
+
+        function updateParticles() {
+            for (let i = arena.particles.length - 1; i >= 0; i--) {
+                const p = arena.particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0) {
+                    arena.particles.splice(i, 1);
+                }
+            }
+        }
+
+        function drawParticles() {
+            for (const p of arena.particles) {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // --- Game Setup / Reset Logic ---
+        function resetBall(direction) {
+            arena.ball.x = arena.width / 2;
+            arena.ball.y = arena.height / 2;
+            
+            // Randomize starting angle with standard limits
+            const angle = (Math.random() * 60 - 30) * Math.PI / 180;
+            arena.ball.vx = direction * arena.ball.baseSpeed * Math.cos(angle);
+            arena.ball.vy = arena.ball.baseSpeed * Math.sin(angle);
+            arena.ball.speedMultiplier = 1;
+            
+            // Trigger score cue or init cue
+            synth.playScore();
+        }
+
+        function spawnPowerup() {
+            if (!state.powerupsActive) return;
+            const types = ['speed', 'large', 'shield'];
+            arena.powerup.type = types[Math.floor(Math.random() * types.length)];
+            arena.powerup.x = 200 + Math.random() * (arena.width - 400);
+            arena.powerup.y = 50 + Math.random() * (arena.height - 100);
+            arena.powerup.active = true;
+            arena.powerup.timer = 400; // frames till expiration
+        }
+
+        function initNewGame() {
+            state.p1Score = 0;
+            state.p2Score = 0;
+            scoreP1Display.textContent = '00';
+            scoreP2Display.textContent = '00';
+            
+            arena.p1Height = arena.height * config.paddleHeightCoeff;
+            arena.p2Height = arena.height * config.paddleHeightCoeff;
+            arena.p1Y = (arena.height - arena.p1Height) / 2;
+            arena.p2Y = (arena.height - arena.p2Height) / 2;
+            
+            arena.activeEffects.p1Large = 0;
+            arena.activeEffects.p2Large = 0;
+            arena.shieldLeft = 0;
+            arena.shieldRight = 0;
+            arena.powerup.active = false;
+            arena.particles = [];
+
+            resetBall(Math.random() > 0.5 ? 1 : -1);
+            
+            state.isPaused = false;
+            state.isPlaying = true;
+            
+            overlayMenu.classList.add('hidden');
+            overlayPause.classList.add('hidden');
+            overlayGameOver.classList.add('hidden');
+            
+            gameStatusTip.textContent = "Match live. Defend your sector.";
+        }
+
+        // --- Main Update Loop ---
+        function update() {
+            if (state.isPaused || !state.isPlaying) return;
+
+            // 1. Move Player 1 (W/S Keys)
+            const pSpeed = 8;
+            if (keys['w'] || keys['W']) arena.p1Y = Math.max(0, arena.p1Y - pSpeed);
+            if (keys['s'] || keys['S']) arena.p1Y = Math.min(arena.height - arena.p1Height, arena.p1Y + pSpeed);
+
+            // 2. Move Player 2 (Arrow keys or AI core)
+            if (state.is1Player) {
+                // AI Routine
+                const speedCoeff = config.speedCoeffs[state.aiDifficulty];
+                const targetY = arena.ball.y - arena.p2Height / 2;
+                // Add minor random noise offset to make AI feel more human on easy/medium
+                const noise = (state.aiDifficulty === 'easy' ? 40 : state.aiDifficulty === 'medium' ? 15 : 0) * Math.sin(Date.now() / 200);
+                arena.p2Y += (targetY + noise - arena.p2Y) * speedCoeff;
+                arena.p2Y = Math.max(0, Math.min(arena.height - arena.p2Height, arena.p2Y));
+            } else {
+                // PvP Movement
+                if (keys['ArrowUp']) arena.p2Y = Math.max(0, arena.p2Y - pSpeed);
+                if (keys['ArrowDown']) arena.p2Y = Math.min(arena.height - arena.p2Height, arena.p2Y + pSpeed);
+            }
+
+            // 3. Process Power-Up Durations
+            if (arena.activeEffects.p1Large > 0) {
+                arena.activeEffects.p1Large--;
+                arena.p1Height = (arena.height * config.paddleHeightCoeff) * 1.5;
+                if (arena.activeEffects.p1Large === 0) arena.p1Height = arena.height * config.paddleHeightCoeff;
+            }
+            if (arena.activeEffects.p2Large > 0) {
+                arena.activeEffects.p2Large--;
+                arena.p2Height = (arena.height * config.paddleHeightCoeff) * 1.5;
+                if (arena.activeEffects.p2Large === 0) arena.p2Height = arena.height * config.paddleHeightCoeff;
+            }
+            if (arena.shieldLeft > 0) arena.shieldLeft--;
+            if (arena.shieldRight > 0) arena.shieldRight--;
+
+            // Handle power-up active lifetime spawn cycle
+            if (state.powerupsActive) {
+                if (arena.powerup.active) {
+                    arena.powerup.timer--;
+                    if (arena.powerup.timer <= 0) arena.powerup.active = false;
+                } else if (Math.random() < 0.002) { // roughly every ~8 seconds
+                    spawnPowerup();
+                }
+            }
+
+            // 4. Ball Physics Update
+            const b = arena.ball;
+            b.x += b.vx * b.speedMultiplier;
+            b.y += b.vy * b.speedMultiplier;
+
+            // Handle boundaries & collisions
+            const ballTop = b.y - b.radius;
+            const ballBottom = b.y + b.radius;
+
+            // Vertical Wall bounce
+            if (ballTop <= 0) {
+                b.y = b.radius;
+                b.vy = -b.vy;
+                createExplosion(b.x, b.y, '#d946ef');
+                synth.playHit(120, 0.08);
+            } else if (ballBottom >= arena.height) {
+                b.y = arena.height - b.radius;
+                b.vy = -b.vy;
+                createExplosion(b.x, b.y, '#d946ef');
+                synth.playHit(120, 0.08);
+            }
+
+            // Powerup Intersection
+            if (arena.powerup.active) {
+                const dx = b.x - arena.powerup.x;
+                const dy = b.y - arena.powerup.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                if (distance < b.radius + arena.powerup.size) {
+                    triggerPowerupEffect(b.vx > 0 ? 'p1' : 'p2');
+                    arena.powerup.active = false;
+                    synth.playPowerup();
+                    createExplosion(arena.powerup.x, arena.powerup.y, '#fbbf24');
+                }
+            }
+
+            // Left Side collision check
+            const leftPaddleEdge = 30 + arena.paddleWidth;
+            if (b.x - b.radius <= leftPaddleEdge && b.x + b.radius >= 30) {
+                if (b.y >= arena.p1Y && b.y <= arena.p1Y + arena.p1Height) {
+                    // Hit left paddle
+                    const relativeY = (b.y - (arena.p1Y + arena.p1Height/2)) / (arena.p1Height/2);
+                    const angle = relativeY * 50 * Math.PI / 180; // max angle 50 degrees
+                    const speed = b.baseSpeed * 1.05;
+                    b.vx = speed * Math.cos(angle);
+                    b.vy = speed * Math.sin(angle);
+                    b.x = leftPaddleEdge + b.radius;
+                    createExplosion(b.x, b.y, '#22d3ee');
+                    synth.playHit(220, 0.1);
+                    // Reward skill with minor velocity boost
+                    b.speedMultiplier = Math.min(b.speedMultiplier + 0.05, 2.2);
+                }
+            }
+
+            // Right Side collision check
+            const rightPaddleEdge = arena.width - 30 - arena.paddleWidth;
+            if (b.x + b.radius >= rightPaddleEdge && b.x - b.radius <= arena.width - 30) {
+                if (b.y >= arena.p2Y && b.y <= arena.p2Y + arena.p2Height) {
+                    // Hit right paddle
+                    const relativeY = (b.y - (arena.p2Y + arena.p2Height/2)) / (arena.p2Height/2);
+                    const angle = relativeY * 50 * Math.PI / 180;
+                    const speed = b.baseSpeed * 1.05;
+                    b.vx = -speed * Math.cos(angle);
+                    b.vy = speed * Math.sin(angle);
+                    b.x = rightPaddleEdge - b.radius;
+                    createExplosion(b.x, b.y, '#f43f5e');
+                    synth.playHit(220, 0.1);
+                    b.speedMultiplier = Math.min(b.speedMultiplier + 0.05, 2.2);
+                }
+            }
+
+            // Check Shields logic (Active barrier prevents immediate goal)
+            if (b.x - b.radius <= 0) {
+                if (arena.shieldLeft > 0) {
+                    b.vx = -b.vx;
+                    b.x = b.radius + 5;
+                    createExplosion(5, b.y, '#34d399');
+                    synth.playHit(300, 0.15);
+                } else {
+                    // Score Player 2
+                    state.p2Score++;
+                    updateScoreDisplay();
+                    checkGameOver();
+                    if (state.isPlaying) resetBall(1);
+                }
+            } else if (b.x + b.radius >= arena.width) {
+                if (arena.shieldRight > 0) {
+                    b.vx = -b.vx;
+                    b.x = arena.width - b.radius - 5;
+                    createExplosion(arena.width - 5, b.y, '#34d399');
+                    synth.playHit(300, 0.15);
+                } else {
+                    // Score Player 1
+                    state.p1Score++;
+                    updateScoreDisplay();
+                    checkGameOver();
+                    if (state.isPlaying) resetBall(-1);
+                }
+            }
+
+            updateParticles();
+        }
+
+        // --- Apply powerup attributes to the player that got it ---
+        function triggerPowerupEffect(player) {
+            const effect = arena.powerup.type;
+            if (effect === 'speed') {
+                arena.ball.speedMultiplier = 1.6;
+                gameStatusTip.textContent = "NODE ACTIVATED: Speed Core Accelerated";
+            } else if (effect === 'large') {
+                if (player === 'p1') {
+                    arena.activeEffects.p1Large = 450; // duration in frames (~7.5s)
+                    gameStatusTip.textContent = "NODE ACTIVATED: P1 Shield Extension";
+                } else {
+                    arena.activeEffects.p2Large = 450;
+                    gameStatusTip.textContent = "NODE ACTIVATED: P2 Shield Extension";
+                }
+            } else if (effect === 'shield') {
+                if (player === 'p1') {
+                    arena.shieldLeft = 600; // frames
+                    gameStatusTip.textContent = "NODE ACTIVATED: P1 Cyber Netting online";
+                } else {
+                    arena.shieldRight = 600;
+                    gameStatusTip.textContent = "NODE ACTIVATED: P2 Cyber Netting online";
+                }
+            }
+        }
+
+        function updateScoreDisplay() {
+            scoreP1Display.textContent = state.p1Score.toString().padStart(2, '0');
+            scoreP2Display.textContent = state.p2Score.toString().padStart(2, '0');
+        }
+
+        function checkGameOver() {
+            if (state.p1Score >= config.targetScore || state.p2Score >= config.targetScore) {
+                state.isPlaying = false;
+                
+                finalP1Display.textContent = state.p1Score;
+                finalP2Display.textContent = state.p2Score;
+
+                if (state.p1Score >= config.targetScore) {
+                    gameoverTitle.textContent = "VICTORY";
+                    gameoverTitle.className = "text-5xl md:text-6xl font-black tracking-widest font-orbitron mb-8 text-cyan-400 neon-text-blue";
+                    gameoverSub.textContent = "PLAYER 1 DOMINATES THE MATRIX";
+                } else {
+                    if (state.is1Player) {
+                        gameoverTitle.textContent = "DEFEATED";
+                        gameoverTitle.className = "text-5xl md:text-6xl font-black tracking-widest font-orbitron mb-8 text-red-500";
+                        gameoverSub.textContent = "AI CORE OVERLOADED SYSTEM PORT";
+                    } else {
+                        gameoverTitle.textContent = "VICTORY";
+                        gameoverTitle.className = "text-5xl md:text-6xl font-black tracking-widest font-orbitron mb-8 text-pink-500 neon-text-pink";
+                        gameoverSub.textContent = "PLAYER 2 DOMINATES THE MATRIX";
+                    }
+                }
+
+                overlayGameOver.classList.remove('hidden');
+            }
+        }
+
+        // --- Render Canvas Scene ---
+        function draw() {
+            // Clear Frame with partial transparency for motion trail
+            ctx.fillStyle = 'rgba(3, 0, 10, 0.3)';
+            ctx.fillRect(0, 0, arena.width, arena.height);
+
+            // 1. Draw Grid Lines (Futuristic Arena styling)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = 1;
+            for (let i = 40; i < arena.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, arena.height);
+                ctx.stroke();
+            }
+            for (let i = 40; i < arena.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(arena.width, i);
+                ctx.stroke();
+            }
+
+            // 2. Draw Center division line
+            ctx.strokeStyle = 'rgba(139, 92, 246, 0.15)';
+            ctx.lineWidth = 4;
+            ctx.setLineDash([15, 15]);
+            ctx.beginPath();
+            ctx.moveTo(arena.width / 2, 0);
+            ctx.lineTo(arena.width / 2, arena.height);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dash
+
+            // 3. Draw Shields (Back nets) if active
+            if (arena.shieldLeft > 0) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(52, 211, 153, 0.6)';
+                ctx.lineWidth = 6;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#34d399';
+                ctx.beginPath();
+                ctx.moveTo(5, 0);
+                ctx.lineTo(5, arena.height);
+                ctx.stroke();
+                ctx.restore();
+            }
+            if (arena.shieldRight > 0) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(52, 211, 153, 0.6)';
+                ctx.lineWidth = 6;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#34d399';
+                ctx.beginPath();
+                ctx.moveTo(arena.width - 5, 0);
+                ctx.lineTo(arena.width - 5, arena.height);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 4. Draw Player 1 Paddle
+            ctx.save();
+            ctx.fillStyle = '#00f2fe';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00f2fe';
+            // Draw neat rounded bar
+            ctx.beginPath();
+            ctx.roundRect(30, arena.p1Y, arena.paddleWidth, arena.p1Height, 8);
+            ctx.fill();
+            ctx.restore();
+
+            // 5. Draw Player 2 Paddle
+            ctx.save();
+            ctx.fillStyle = '#ff0080';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff0080';
+            ctx.beginPath();
+            ctx.roundRect(arena.width - 30 - arena.paddleWidth, arena.p2Y, arena.paddleWidth, arena.p2Height, 8);
+            ctx.fill();
+            ctx.restore();
+
+            // 6. Draw Power-Up Node (Cube)
+            if (arena.powerup.active) {
+                ctx.save();
+                const bounce = Math.sin(Date.now() / 150) * 4;
+                ctx.translate(arena.powerup.x, arena.powerup.y + bounce);
+                
+                // Color mapping
+                let pColor = '#fbbf24';
+                if (arena.powerup.type === 'speed') pColor = '#a855f7';
+                if (arena.powerup.type === 'shield') pColor = '#34d399';
+
+                ctx.fillStyle = pColor;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = pColor;
+                ctx.fillRect(-arena.powerup.size/2, -arena.powerup.size/2, arena.powerup.size, arena.powerup.size);
+                
+                // Inner core
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-arena.powerup.size/4, -arena.powerup.size/4, arena.powerup.size/2, arena.powerup.size/2);
+                ctx.restore();
+            }
+
+            // 7. Draw Ball with glow
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(arena.ball.x, arena.ball.y, arena.ball.radius, 0, Math.PI * 2);
+            
+            // Dynamic color shift depending on speed & path
+            let ballColor = '#ffffff';
+            if (arena.ball.speedMultiplier > 1.4) ballColor = '#facc15';
+            else if (arena.ball.vx > 0) ballColor = '#00f2fe';
+            else ballColor = '#ff0080';
+
+            ctx.fillStyle = ballColor;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = ballColor;
+            ctx.fill();
+            ctx.restore();
+
+            // 8. Render explosions
+            drawParticles();
+        }
+
+        // --- Core Run Loop ---
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // Start animation rendering loop automatically
+        requestAnimationFrame(loop);
+
+        // --- Interactive State Control UI Hooks ---
+        function togglePause() {
+            if (!state.isPlaying) return;
+            state.isPaused = !state.isPaused;
+            if (state.isPaused) {
+                overlayPause.classList.remove('hidden');
+                gameStatusTip.textContent = "Simulation suspended.";
+            } else {
+                overlayPause.classList.add('hidden');
+                gameStatusTip.textContent = "Match live. Defend your sector.";
+            }
+        }
+
+        // Choose AI Mode
+        btnModeAi.addEventListener('click', () => {
+            state.is1Player = true;
+            btnModeAi.className = "py-3 px-4 rounded-xl border border-cyan-400/30 bg-cyan-950/20 hover:bg-cyan-950/40 text-cyan-300 font-bold tracking-wider transition-all duration-200 neon-border-blue";
+            btnModePvp.className = "py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 font-bold tracking-wider transition-all duration-200";
+            aiDifficultyContainer.style.display = 'block';
+        });
+
+        // Choose Local PvP Mode
+        btnModePvp.addEventListener('click', () => {
+            state.is1Player = false;
+            btnModePvp.className = "py-3 px-4 rounded-xl border border-pink-500/30 bg-pink-950/20 hover:bg-pink-950/40 text-pink-300 font-bold tracking-wider transition-all duration-200 neon-border-pink";
+            btnModeAi.className = "py-3 px-4 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 font-bold tracking-wider transition-all duration-200";
+            aiDifficultyContainer.style.display = 'none';
+        });
+
+        // Set AI Difficulty selectors
+        document.querySelectorAll('[data-diff]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('[data-diff]').forEach(b => {
+                    b.className = "py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 text-xs font-bold tracking-wider transition-all duration-200";
+                });
+                state.aiDifficulty = e.target.getAttribute('data-diff');
+                e.target.className = "py-2 rounded-lg border border-pink-500/40 bg-pink-950/20 text-pink-400 text-xs font-bold tracking-wider transition-all duration-200 neon-border-pink";
+            });
+        });
+
+        // Toggle Powerups
+        btnTogglePowerups.addEventListener('click', () => {
+            state.powerupsActive = !state.powerupsActive;
+            const dot = btnTogglePowerups.querySelector('span');
+            if (state.powerupsActive) {
+                btnTogglePowerups.className = "w-12 h-6 rounded-full bg-green-500/20 border border-green-500/50 flex items-center p-1 cursor-pointer transition-colors";
+                dot.className = "w-4 h-4 rounded-full bg-green-400 translate-x-6 transition-transform block";
+            } else {
+                btnTogglePowerups.className = "w-12 h-6 rounded-full bg-neutral-800 border border-neutral-700 flex items-center p-1 cursor-pointer transition-colors";
+                dot.className = "w-4 h-4 rounded-full bg-neutral-500 translate-x-0 transition-transform block";
+            }
+        });
+
+        // Toggle Synth sounds
+        btnToggleSound.addEventListener('click', () => {
+            synth.enabled = !synth.enabled;
+            const dot = btnToggleSound.querySelector('span');
+            if (synth.enabled) {
+                btnToggleSound.className = "w-12 h-6 rounded-full bg-green-500/20 border border-green-500/50 flex items-center p-1 cursor-pointer transition-colors";
+                dot.className = "w-4 h-4 rounded-full bg-green-400 translate-x-6 transition-transform block";
+            } else {
+                btnToggleSound.className = "w-12 h-6 rounded-full bg-neutral-800 border border-neutral-700 flex items-center p-1 cursor-pointer transition-colors";
+                dot.className = "w-4 h-4 rounded-full bg-neutral-500 translate-x-0 transition-transform block";
+            }
+        });
+
+        // Launch Game
+        btnLaunch.addEventListener('click', () => {
+            // Trigger audio context play init wrapper safe behavior
+            synth.init();
+            initNewGame();
+        });
+
+        // Pause Game Overlay buttons
+        btnPause.addEventListener('click', togglePause);
+        btnResume.addEventListener('click', togglePause);
+        btnQuit.addEventListener('click', () => {
+            state.isPlaying = false;
+            overlayPause.classList.add('hidden');
+            overlayMenu.classList.remove('hidden');
+            gameStatusTip.textContent = "Ready to execute simulation";
+        });
+
+        // Game Over buttons
+        btnRestart.addEventListener('click', initNewGame);
+        btnReturnMenu.addEventListener('click', () => {
+            overlayGameOver.classList.add('hidden');
+            overlayMenu.classList.remove('hidden');
+            gameStatusTip.textContent = "Ready to execute simulation";
+        });
+    </script>
+</body>
+</html>
